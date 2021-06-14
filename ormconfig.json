@@ -1,0 +1,11 @@
+{
+  "type": "sqlite",
+  "database": "./database.sqlite",
+  "synchronize": "true",
+  "entities": [
+    "dist/database/entities/**/*.js"
+  ],
+  "cli": {
+    "entitiesDir": "src/database/entities"
+  }
+}
