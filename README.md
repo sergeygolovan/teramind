@@ -23,11 +23,17 @@ You are able to use any libraries and code samples from the internet or from you
 Stack:
 
 > NestJS - server-side framework
+
 > TypeORM / SQLite - database connectivity & API
+
 > Passport (Local + JWT + Nest Guards) - authentication & authorization
+
 > Multer - file uploader library
+
 > Serve-static - serving HTML pages in browser
-> Jade Engine + Bootstrap 4 - html, css engines
+
+> Handlebars Engine + Bootstrap 4 - html, css engines
+
 > Jest - unit & e2e testing
 
 TODO:

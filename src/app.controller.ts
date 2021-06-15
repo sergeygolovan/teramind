@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   InternalServerErrorException,
@@ -12,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBasicAuth, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth/auth.service';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { LocalAuthGuard } from './auth/guards/local-auth.guard';
@@ -20,7 +22,6 @@ import { UserEntity } from './database/entities/user.entity';
 import { FilesService } from './files/files.service';
 import { CreateUserDTO } from './users/dto/create-user.dto';
 import { UsersService } from './users/users.service';
-import { Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -36,7 +37,7 @@ export class AppController {
    */
   @Post('/login')
   @UseGuards(LocalAuthGuard)
-  async login(@Req() req) {
+  async login(@Body() userDTO: CreateUserDTO, @Req() req) {
     return this.authService.login(req.user);
   }
 
@@ -46,17 +47,19 @@ export class AppController {
    * @returns
    */
   @Post('/register')
-  async register(createUserDTO: CreateUserDTO) {
+  async register(@Body() createUserDTO: CreateUserDTO) {
     const user = await this.userService.findOne(createUserDTO.login);
 
     if (user) {
       throw new BadRequestException(
-        `Пользователь с таким именем уже существует!`,
+        `Пользователь с именем ${user.login} уже существует!`,
       );
     }
 
     try {
-      return this.userService.create(createUserDTO);
+      const { password, ...result } = await this.userService.create(createUserDTO);
+
+      return result;
     } catch (err) {
       throw new InternalServerErrorException(
         `При создании пользователя произошла ошибка!`,
@@ -69,10 +72,30 @@ export class AppController {
    * @param fileToUpload
    * @param user
    */
+  @ApiBearerAuth()
   @Post('upload')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() fileToUpload, @User() user: UserEntity) {}
+  async uploadFile(
+    @UploadedFile() fileToUpload: Express.Multer.File,
+    @User() user: UserEntity,
+  ) {
+    try {
+      const isFileExists = user.files.some(
+        (file) => file.fileName === fileToUpload.filename,
+      );
+
+      if (isFileExists) {
+        throw new BadRequestException(
+          `Файл ${fileToUpload.originalname} уже загружен в систему!`,
+        );
+      }
+
+      await this.filesService.create(fileToUpload, user);
+    } catch (err) {
+      throw new BadRequestException(`Призагрузке файла произошла ошибка!`);
+    }
+  }
 
   /**
    * Выгрузка файла пользователю
@@ -81,12 +104,12 @@ export class AppController {
    * @param response
    * @returns
    */
+  @ApiBearerAuth()
   @Get('download/:id')
   @UseGuards(JwtAuthGuard)
   async downloadFile(
     @Param('id') requestedFileId: string,
     @User() user: UserEntity,
-    @Res() response: Response,
   ) {
     const isFileCouldBeDownloaded = user.files
       .map((file) => file.id)
@@ -108,14 +131,14 @@ export class AppController {
 
   /**
    * Поиск файлов, добавленных конкретным пользователем
-   * @param user 
-   * @returns 
+   * @param user
+   * @returns
    */
+  @ApiBearerAuth()
   @Get('list')
   @UseGuards(JwtAuthGuard)
   async getFileList(@User() user: UserEntity) {
-    return await this.filesService.findByIds(
-      user.files.map((file) => file.id)
-    );
+    return await this.filesService.findByIds(user.files.map((file) => file.id));
   }
 }
+

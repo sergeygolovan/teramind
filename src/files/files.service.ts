@@ -11,12 +11,12 @@ export class FilesService {
     private filesRepository: Repository<FileEntity>,
   ) {}
 
-  async create(fileToUpload, user: UserEntity): Promise<any> {
+  async create(fileToUpload: Express.Multer.File, user: UserEntity): Promise<any> {
     const file = new FileEntity();
 
     file.fileName = fileToUpload.filename;
     file.uploadDate = new Date();
-    file.data = fileToUpload.boffer;
+    file.data = fileToUpload.buffer;
     file.owner = user;
     
     return this.filesRepository.save(file);

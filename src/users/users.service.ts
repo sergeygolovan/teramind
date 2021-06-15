@@ -11,7 +11,7 @@ export class UsersService {
     private usersRepository: Repository<UserEntity>,
   ) {}
 
-  async create(createUserDto: CreateUserDTO): Promise<any> {
+  async create(createUserDto: CreateUserDTO): Promise<UserEntity> {
     const user = new UserEntity();
 
     user.login = createUserDto.login;

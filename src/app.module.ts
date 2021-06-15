@@ -8,22 +8,24 @@ import { MulterModule } from '@nestjs/platform-express';
 import { multerOptions } from './files/common/multerOptions';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { UserEntity } from './database/entities/user.entity';
+import { FileEntity } from './database/entities/file.entity';
+import { AuthModule } from './auth/auth.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: 'src/static'
-    }),
     TypeOrmModule.forRoot({
-      autoLoadEntities: true
+      type: "sqlite",
+      database: "src/database/database.sqlite",
+      synchronize: true,
+      entities: [UserEntity, FileEntity]
     }),
-    UsersModule,
+    MulterModule.register(multerOptions),
     PassportModule,
-    JwtModule.register({
-      secret: jwtConstants.secret,
-      signOptions: { expiresIn: '600s' },
-    }),
-    MulterModule.register(multerOptions)
+    AuthModule,
+    UsersModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [],
